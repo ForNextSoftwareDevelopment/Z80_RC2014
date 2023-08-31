@@ -1,1 +1,211 @@
+<Introduction>
+
+This is an assembler/disassembler for the Z80 microprocessor.
+It can also simulate a RC2014 system with the SIO/2 and Compact Flash card for debugging programs.
+
+<Operations>
+
+After loading a source file into the main window you can debug (assemble) it with the debugger button.
+If the code doesn't start with an ORG directive the startaddress is set to 0000H.
+The first error it encounters will be highlighted in red.
+Adjustments can be made in the main window (don't forget to save).
+
+If no errors were encountered, the simulator is ready to (fast-) run or step through the program and the first instruction to be executed will be highlighted in green.
+Running will be with a delay of 50 ms between instructions (this can be adjusted in the main screen).
+Fast running will execute the instruction at the maximum speed but no updates of the flags/registers/memory/ports will be seen on the screen until the program is stopped or a breakpoint is encountered.
+
+Setting the program counter to a specific address can be done by entering this address in the the 'set program counter' textbox and close with an enter. 
+
+At any time the memory and ports can be viewed in the right windows.
+The memory window will follow the next instruction to be executed, this can be prevented with the 'Lock' checkbox.
+The memory window can be easily set to the program counter or stack pointer with the designated buttons.
+
+On the left all registers of the Z80 are shown.
+
+Above the memory panel the status of the Interrupt Enable/Disable is shown as a green (Enabled) or red (Disabled) label.
+The interrupt mode is shown to the right (Im0, Im1 or Im2)
+ 
+With the checkbox 'Terminal' a display of a Terminal can be shown/hidden.
+All keystrokes typed in this window (and in the main window with fast run) will be transferred to the interrupt routine defined in the source code by the label 'IO_INTERRUPT_HANDLER'.
+The interrupt handler will also be detected if the assembler detects a setting of the SIO port B register2 in the code.
+
+When the checkbox 'Show External Code' is checked all code not in the main program source will be disassembled and shown in a seperate window.
+This will also take place when runnning in fast mode. 
+Remember this will take time, so uncheck this option to run at maximum speed.
+
+A simple monitor program has been provided in the folder 'Sources'.
+This monitor program is for educational purposes and can be expanded by adding more commands to the command processor (now only go and reset).
+The monitor will load the bios from ROM (located right behind the monitor program) and copy it to $E600.
+If the command 'go' has been given it will then transfer control to the bios.
+The first thing the bios will do is disable the ROM so the full RAM area will be available.
+Then it will load CP/M from the CF card to $D000 and tranfer control to CP/M.
+
+The folder `sources` also contain the bios code.
+To create an image for burning an eeprom first `debug` (and thus assemble) the monitor code and save as a binary.
+Then `debug` the bios code and append this to this binary file.
+This way the bios code will be assembled as if running from $E600 but actually located (initially before the copying by the monitor program) just behind the monitor program.
+Burning of this binary image can now be done with an eprom programmer (I use the TL866II Plus).
+
+The CP/M code must be on the cf card, so I included an image (cf.img in the folder Images) on which CP/M resides in the boot sector.
+Also some test programs can be found on disk A (sources of these are in the `Sources` folder). 
+The CP/M code can also be added by inserting the source of the program in the Tab `Compact Flash` and then `debug`.
+The program will assemble like it was at the `ORG` statement in the code but will be copied to the first (boot) sector of the compact flash memory.
+
+To place a program on the cf card you can load the source of the program in the Tab `Compact Flash` and then `debug`.
+The program must have an `ORG` statement with the drive label (A to P) and the name/type of the program (e.g. org A,ZEXLAX.COM)
+This program will allways be loaded at address $0100 by CP/M.
+To see the programs on the cf card select the tab `Compact Flash` next to the `Memory` tab.
+Breakpoints can also be set in this source code.
+If debugged and assembled from source code the simulator will show the program location in the source code when running (slow), stepping or pressing the stop button.
+`Important: only one program (the last one debugged/assembled) will give meaningfull info since all programs start at address $0100.`
+
+I also have placed a combination of programs in the Sources folder.
+bios_cpm22.asm will provide a complete system to test programs run from the Compact Flash.
+Just load it in the `program` tab, `debug` and run(fast).
+CP/M will then start in the terminal.
+
+<Assembler>
+
+The assembler can use all of the instructions of the Z80 processor including some of the undocumented instructions.
+All of the undocumented instructions can be used to run the program but I choose not to include several instructions because they are actually 2 instructions.
+Like rlc (ix+o),b = The contents of the memory location pointed to by IX plus o are rotated left one bit position. The contents of bit 7 are copied to the carry flag and bit 0. The result is then stored in B.
+The instructions are implemented by buttons on the left of the screen for reference and/or inserting the selected instruction into the program.
+Numbers should be denoted in decimal, hexadecimal (0x00, $00 or 00H style) or binary (10101010B style).
+The assembler passes the Zexdoc test, not the Zexall (The undocumented instructions can all be executed but I don't use the undocumented flags).
+
+Macros can be used in simple format:
+
+`definition`
+label:  macro   arg1, arg2, arg3
+        local   lab
+lab:    
+        db      arg1
+        dw      arg2
+        ld      a,arg1
+        ld      hl,arg2
+        ld      (hl),a
+        endm
+
+`usage`
+label   8ah,0100h,0
+
+`will result in`
+lab0000:
+        db      8ah
+        dw      0100h
+        ld      a,8ah
+        ld      hl,0100h
+        ld      (hl),a
+
+A debug statement can be defined like:
+`DEBUG false` or `DEBUG true`
+All code with a start statement in between `#debug` and `#enddebug` will be affected by this (included or excluded)
+
+The following directives can be used (example on next row(s)):
+
+`ASEG` Use the location counter for the absolute program segment
+`CSEG` Use the location counter for the code program segment
+`DSEG` Use the location counter for the data program segment
+Followed by and 'ORG' directive the assembler will set the segemnt to this address
+
+`ORG address` Set locationcounter to this address (while assembling)
+ORG 0000H
+
+`LABEL EQU constant` Assignement of a constant
+DSPLY EQU 1800H 
+
+`$` Current location counter (while assembling)
+NUMC EQU $ - CMDTB ; NUMBER OF COMMANDS 
+
+`[LABEL] DB value` Reserving a (number of) byte(s) (with or without label), strings in double quotes will be terminated by a zero
+STRING DB "Terminal"
+CHARARRAY DB 'Terminal'
+AT DB '@', 00H
+DB 00H, 01H, 02H
+DB 'A', 'B', 'C'
+
+`[LABEL] DW value` Reserving a word (with or without label)
+DW 0000H
+CMDAD: 
+        DW      SSTEP   ; ADDRESS OF SINGLE STEP ROUTINE 
+        DW      EXAM    ; ADDRESS OF EXAMINE REGISTERS ROUTINE 
+        DW      SUBST   ; ADDRESS OF SUBSTITUTE MEMORY ROUTINE 
+        DW      GOCMD   ; ADDRESS OF GO ROUTINE 
+
+`[LABEL] DS number` Reserving 'number' of bytes  
+
+`LOW([LABEL])` will give the low byte of 2 bytes (usually an address) 
+`HIGH([LABEL])` will give the high byte of 2 bytes (usually an address) 
+
+`Arithmetic` e.g. +1, -2, *4, /2 
+USRBR EQU RAMST + 256 - (RMUSE + SKLN + UBRLN)
+
+`Logical` AND, OR 
+FLAG & 01H
+FLAG | 80H
+
+<DisAssembler>
+
+The disassembler will follow all possible paths from an entry address.
+Additional paths can be provided.
+
+<Menu>
+
+`File->New` 
+
+Delete source file and reset simulator
+
+`File->Open` 
+
+Load a new source file
+
+`File->Save` 
+
+Save the current source file
+
+`File->Save As`
+
+Save the current source file under a given name
+ 
+`File->Save Binary`
+
+Save the binary from assembling the current source
+
+`File->Append Binary`
+
+Append the binary from assembling the current source to a file to be selected
+
+`File->Quit`
+
+Quit program
+
+`Reset->Reset RAM`
+
+Clear RAM
+
+`Reset->Reset Ports`
+
+Clear Ports
+
+`Reset->Reset Simulator`
+
+Clear RAM, Ports, Registers, Flags
+
+`DisAssembler->Open Binary`
+
+Open a binary file for disassembly
+
+`Help->Manual` 
+
+Show this manual
+
+`Help->About`
+
+Show program info
+
+-----------------------------------------------------
+Please report any bugs you encounter,
+Dirk
+info@fornext.nl 
+
 
