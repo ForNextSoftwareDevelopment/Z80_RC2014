@@ -14,7 +14,7 @@ You will the get something like:
 
 ![Screenshot](ScreenShot1.png)
 
-Use the tab 'Compact Flash' next to the 'Program' tab to enter code to insert on the compact flash card.
+Use the tab 'Compact Flash' next to the 'Program' tab to enter code to insert into the compact flash card.
 You can use the button 'Debug' to debug/assemble the file and place it on the CF card (note the altered 'org' statement in the code):
 
 ![Screenshot](ScreenShot2.png)
