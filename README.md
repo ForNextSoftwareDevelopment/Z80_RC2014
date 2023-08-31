@@ -19,14 +19,14 @@ You can use the button 'Debug' to debug/assemble the file and place it on the CF
 
 ![Screenshot](ScreenShot2.png)
 
-A compact flash image is provided (zipped in the folder CompactFlash) to load in the compact flash tab page (next to the memory tab)
+A compact flash image is provided (zipped in the folder CompactFlash) to load in the compact flash tab page (next to the memory tab).
 It contains the CP/M boot sector and some test programs (sources available in the Sources folder):
 Remember when running a program you can allways halt it by pressing the 'Stop' button (red square) and resume again by pressing 'Run' (play sign), 'Fast' or 'Step'. 
 
 ![Screenshot](ScreenShot3.png)
 
-You could run 'mandel' (type mandel in the terminal and enter) and get the following: 
-(It's wise to disable the checkbox 'Show External Code' or it will take a long time.)
+You could run 'mandel' (type mandel in the terminal and enter) and get the following:
+(It's wise to disable the checkbox 'Show External Code' or it will take a long time)
 
 ![Screenshot](ScreenShot4.png)
 
@@ -34,7 +34,7 @@ Also provided is the Zexdoc program to test all simulated instructions:
 
 ![Screenshot](ScreenShot5.png)
 
-More info is available in the 'Help'menu.
+More info is available in the 'Help' menu.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
