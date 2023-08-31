@@ -14,20 +14,25 @@ You will the get something like:
 
 ![Screenshot](ScreenShot1.png)
 
+Use the tab 'Compact Flash' next to the 'Program' tab to enter code to insert on the compact flash card.
+You can use the button 'Debug' to debug/assemble the file and place it on the CF card (note the altered 'org' statement in the code):
+
+![Screenshot](ScreenShot2.png)
+
 A compact flash image is provided (zipped in the folder CompactFlash) to load in the compact flash tab page (next to the memory tab)
 It contains the CP/M boot sector and some test programs (sources available in the Sources folder):
 Remember when running a program you can allways halt it by pressing the 'Stop' button (red square) and resume again by pressing 'Run' (play sign), 'Fast' or 'Step'. 
 
-![Screenshot](ScreenShot2.png)
+![Screenshot](ScreenShot3.png)
 
 You could run 'mandel' (type mandel in the terminal and enter) and get the following: 
 (It's wise to disable the checkbox 'Show External Code' or it will take a long time.)
 
-![Screenshot](ScreenShot3.png)
+![Screenshot](ScreenShot4.png)
 
 Also provided is the Zexdoc program to test all simulated instructions:
 
-![Screenshot](ScreenShot4.png)
+![Screenshot](ScreenShot5.png)
 
 More info is available in the 'Help'menu.
 
