@@ -1,57 +1,111 @@
 <Introduction>
 
 This is an assembler/disassembler for the Z80 microprocessor.
-It can also simulate a Multitech Microprofessor MPF-1 single board computer (keyboard/display).
+It can also simulate a RC2014 system with the SIO/2 and Compact Flash card for debugging your programs.
 
 <Operations>
 
 After loading a source file into the main window you can debug (assemble) it with the debugger button.
 If the code doesn't start with an ORG directive the startaddress is set to 0000H.
-The first error it encounters will be highlighted in light red.
-Ajustments can be made in the main window (don't forget to save).
+The first error it encounters will be highlighted in red.
+Adjustments can be made in the main window (don't forget to save).
 
-If no errors were encountered, the simulator is ready to (fast-) run or step through the program and the first instruction to be executed will be highlighted in light green.
+If no errors were encountered, the simulator is ready to (fast-) run or step through the program and the first instruction to be executed will be highlighted in green.
 Running will be with a delay of 50 ms between instructions (this can be adjusted in the main screen).
 Fast running will execute the instruction at the maximum speed but no updates of the flags/registers/memory/ports will be seen on the screen until the program is stopped or a breakpoint is encountered.
 
-The checkbox 'Skip Program Delay Loops' will skip the loop delay instruction: 'djnz $'.
-This is a delay routine used for example in a delay after writing a digit to the display.
-While stepping or running trough a program it can be quite a nuisance ;-)
-If Fast Running has been selected it can be ok to uncheck this so the display will be better visible.
+Setting the program counter to a specific address can be done by entering this address in the the 'Set Program Counter' textbox and close with an enter. 
 
-Setting the program counter to a specific address can be done by entering this address in the the 'set program counter' textbox and close with an enter. 
-
-At any time the memory and ports can be viewed in the right windows.
+At any time the program can be stopped (with the stop button) and the memory and ports can be viewed in the right windows.
+After a stop execution of the program can be resumed with Run (Fast) or with the Step button.
 The memory window will follow the next instruction to be executed, this can be prevented with the 'Lock' checkbox.
 The memory window can be easily set to the program counter or stack pointer with the designated buttons.
 
 On the left all registers of the Z80 are shown.
 
-Above the memory panel the status of the Interrupt Enable/Disable is shown as a green (Enabled) or red (Disabled) label.
+On top of the memory panel the status of the Interrupt Enable/Disable is shown as a green (Enabled) or red (Disabled) label.
 The interrupt mode is shown to the right (Im0, Im1 or Im2)
  
-With the checkbox 'MPF-1' a keyboard/display of a MPF-1 can be shown/hidden.
-This will simulate the MPF-1, the display will show what has been written to the display port B (0x01), Port C (0x02) selects the digit.
-The keyboard row can be read at port A (0x00) also with the column selected with port C (0x02).
-If a key is pressed it turns red and stays that way (active) until it is pressed again to give the program time to scan it.
-Only the 'Reset', the 'Moni', the 'Intr' and the 'User' key will act directly as an interrupt in the running program.
+With the checkbox 'Terminal' a display of a Terminal can be shown/hidden.
+All keystrokes typed in this window (and in the main window with (fast) run) will be transferred to the interrupt routine defined in the source code by the label 'IO_INTERRUPT_HANDLER'.
+The interrupt handler will also be detected if the assembler detects a setting of the SIO port B register2 in the code.
 
-If a sound is created (by writing square wave forms to port C, bit7) an image of a speaker will be visible.
-Since it's not realy posible to detect the frequency of the sound created (other then by a monitor routine, see later in this document) only a visible indication is shown.
+When the checkbox 'Show External Code' is checked all code not in the main program source will be disassembled and shown in a seperate window.
+This will also take place when runnning in fast mode. 
+Remember this will take time, so uncheck this option to run at maximum speed.
 
-The monitor program of the MPF-1 has been provided in the folder 'Monitor'.
-A version with comments has been added for documentary purposes.
+A simple monitor program has been provided in the folder 'Sources'.
+This monitor program is for educational purposes and can be expanded by adding more commands to the command processor (now only go and reset).
+The monitor will load the bios from ROM (located right behind the monitor program) and copy it to memory location $E600.
+If the command 'go' has been given it will then transfer control to the bios.
+The first thing the bios will do is disable the ROM so the full RAM area will be available.
+Then it will load CP/M from the CF card to $D000 and tranfer control to CP/M.
 
-In the MPF-1 window there are several checkboxes:
--Display Latch: When checked this will display (remember) the last written value (other then 0x00) at a display digit.
--Enable Sound: When checked if a sound is made by the monitor routine (TONE, TONE1K, TONE2K) this will be audible.
--Insert Monitor Program on Debug: When the debug button is pressed it will insert the monitor program (after assembly of the user program) at 0x0000 to 0x0800
+The folder 'Sources' also contain the bios code.
+To create an image for burning an eeprom first 'debug' (and thus assemble) the monitor code and save it as a binary.
+Then load and 'debug' the bios code and append it to this binary file.
+This way the bios code will be assembled as if running from $E600 but actually located (initially before the copying by the monitor program) just behind the monitor program.
+Burning of this binary image can now be done with an eprom programmer (I use the TL866II Plus).
+
+The CP/M code must be on the cf card, so an image (cf.img in the folder 'CompactFlash') on which CP/M resides in the boot sector is included.
+Also some test programs can be found on disk A (sources are in the 'Sources' folder). 
+
+The CP/M code can also be added by inserting the source of the program in the Tab 'Compact Flash' and then 'debug'.
+The program will assemble like it was at the `ORG` statement in the code but will be copied to the first (boot) sector of the compact flash memory.
+
+To place a program on the compact flash card you can load the source of the program in the Tab 'Compact Flash' and then 'debug'.
+The program must have an 'ORG' statement with the drive label (A to P) and the name/type of the program (e.g. org A,ZEXLAX.COM)
+This program will allways be loaded at address $0100 by CP/M.
+
+To see the programs on the compact flash card select the tab 'Compact Flash' next to the 'Memory' tab.
+Breakpoints can also be set in this source code.
+If debugged and assembled from source code the simulator will show the program location in the source code when running, stepping or pressing the stop button.
+`Important: only one program (the last one debugged/assembled) will give meaningfull info since all programs start at address $0100.`
+
+I also have placed a combination of programs in the Sources folder.
+'bios_cpm22.asm' will provide a complete system to test programs run from the compact flash card.
+Just load it in the 'program' tab, 'debug' and run(fast).
+CP/M will then start in the terminal.
+Allways remember it will take some time before the prompt in the terminal is visible when running in slow mode.
+Best is to run fast and set the checkbox 'Break on PC' (program counter) for a breakpoint at address $0x100 so the program will stop at the start of your own program running from the compact flash card (with the source in the 'Compact Flash' window).
+Or set a manual breakpoint in your own source in the 'Compact Flash' source window.
 
 <Assembler>
 
-The assembler can use all of the instructions of the Z80 processor including the undocumented instructions.
-All instructions are implemented by buttons on the left of the screen for reference and/or inserting the selected instruction into the program.
+The assembler can use all of the instructions of the Z80 processor including some of the undocumented instructions.
+All of the undocumented instructions can be used for running the program but not all instructions are implemented in the assembler or visible on the instruction buttons.
+Like rlc (ix+o),b or res 0,(ix+o),b which are in fact two instructions in one.
+The instructions are visible by buttons on the left of the screen for reference and/or inserting the selected instruction into the program.
 Numbers should be denoted in decimal, hexadecimal (0x00, $00 or 00H style) or binary (10101010B style).
+The assembler passes the Zexdoc test, not the Zexall (The undocumented instructions can all be executed but the undocumented flags are not used).
+
+Macros can be used in simple format:
+
+`definition`
+label:  macro   arg1, arg2, arg3
+        local   lab
+lab:    
+        db      arg1
+        dw      arg2
+        ld      a,arg1
+        ld      hl,arg2
+        ld      (hl),a
+        endm
+
+`usage`
+label   8ah,0100h,0
+
+`will result in`
+lab0000:
+        db      8ah
+        dw      0100h
+        ld      a,8ah
+        ld      hl,0100h
+        ld      (hl),a
+
+A debug statement can be defined like:
+`DEBUG false` or `DEBUG true`
+All code with a start statement in between `#debug` and `#enddebug` will be affected by this (included or excluded)
 
 The following directives can be used (example on next row(s)):
 
@@ -70,8 +124,8 @@ DSPLY EQU 1800H
 NUMC EQU $ - CMDTB ; NUMBER OF COMMANDS 
 
 `[LABEL] DB value` Reserving a (number of) byte(s) (with or without label), strings in double quotes will be terminated by a zero
-STRING DB "MPF-1"
-CHARARRAY DB 'MPF-1'
+STRING DB "Terminal"
+CHARARRAY DB 'Terminal'
 AT DB '@', 00H
 DB 00H, 01H, 02H
 DB 'A', 'B', 'C'
@@ -122,6 +176,10 @@ Save the current source file under a given name
 `File->Save Binary`
 
 Save the binary from assembling the current source
+
+`File->Append Binary`
+
+Append the binary from assembling the current source to a file to be selected
 
 `File->Quit`
 
