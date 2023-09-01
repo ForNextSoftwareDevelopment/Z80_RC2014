@@ -10,7 +10,7 @@ You can start by loading the bios_cpm22.asm program from the folder 'Sources'.
 This contains the bios and the cp/m 2.2 operating system so booting from the cf card is not needed.
 Use the button 'Debug' to debug/assemble the file.
 Then press the button 'Fast' (fast forward sign) to run the program.
-You will the get something like:
+You will then get something like:
 
 ![Screenshot](ScreenShot1.png)
 
