@@ -21,7 +21,7 @@ You can use the button 'Debug' to debug/assemble the file and place it on the CF
 
 A compact flash image is provided (zipped in the folder CompactFlash) to load in the compact flash tab page (next to the memory tab).
 It contains the CP/M boot sector and some test programs (sources available in the Sources folder):
-Remember when running a program you can allways halt it by pressing the 'Stop' button (red square) and resume again by pressing 'Run' (play sign), 'Fast' or 'Step'. 
+Remember when running a program you can always halt it by pressing the 'Stop' button (red square) and resume again by pressing 'Run' (play sign), 'Fast' or 'Step'. 
 
 ![Screenshot](ScreenShot3.png)
 
