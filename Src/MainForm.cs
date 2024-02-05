@@ -2036,7 +2036,7 @@ namespace Z80_RC2014
                 {
                     int line = textBox.GetLineFromCharIndex(textBox.SelectionStart);
                     string strLine = textBox.Lines[line];
-                    textBox.Select(textBox.GetFirstCharIndexFromLine(line), line.Length);
+                    textBox.Select(textBox.GetFirstCharIndexFromLine(line), strLine.Length);
                     string[] parts = strLine.Split(' ');
                     bool result = Int32.TryParse(parts[parts.Length - 1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int address);
                     if (result) tbMemoryStartAddress.Text = address.ToString("X4");
