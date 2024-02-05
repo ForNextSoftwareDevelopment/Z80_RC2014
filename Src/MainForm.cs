@@ -1922,13 +1922,9 @@ namespace Z80_RC2014
                 
                 if (dialogResult == DialogResult.OK)
                 {
-                    if (richTextBoxProgram.SelectionStart == 0)
-                    {
-                        richTextBoxProgram.AppendText(command.instruction);
-                    } else
-                    {
-                        richTextBoxProgram.AppendText(Environment.NewLine + command.instruction);
-                    }
+                    Clipboard.Clear();
+                    Clipboard.SetText(command.instruction + Environment.NewLine + Environment.NewLine);
+                    richTextBoxProgram.Paste();
                 }
             }
         }
@@ -2040,7 +2036,7 @@ namespace Z80_RC2014
                 {
                     int line = textBox.GetLineFromCharIndex(textBox.SelectionStart);
                     string strLine = textBox.Lines[line];
-                    textBox.Select(textBox.GetFirstCharIndexFromLine(line), textBox.Text.IndexOf(Environment.NewLine, textBox.Lines[line].Length));
+                    textBox.Select(textBox.GetFirstCharIndexFromLine(line), line.Length);
                     string[] parts = strLine.Split(' ');
                     bool result = Int32.TryParse(parts[parts.Length - 1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int address);
                     if (result) tbMemoryStartAddress.Text = address.ToString("X4");
