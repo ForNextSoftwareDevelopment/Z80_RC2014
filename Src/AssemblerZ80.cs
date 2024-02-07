@@ -5274,7 +5274,7 @@ namespace Z80_RC2014
                     (byteInstruction == 0x78))
                 {
                     num = byteInstruction - 0x40;
-                    if (PORT[registerC] == 0x10)
+                    if (registerC == 0x10)
                     {
                         // Update the Port and register from the compact flash card data
                         UpdateCompactFlashRead = true;
@@ -5452,7 +5452,7 @@ namespace Z80_RC2014
                     registerPC++;
                 } else if (byteInstruction == 0x70)                                                                         // in (c)
                 {
-                    if (PORT[registerC] == 0x10)
+                    if (registerC == 0x10)
                     {
                         // Update the Port and registerA from the compact flash card data
                         UpdateCompactFlashRead = true;
