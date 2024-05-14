@@ -106,8 +106,11 @@ namespace Z80_RC2014
 
             if (startAddress < loadAddress)
             {
-                MessageBox.Show("The start address can't be in front of the load address", "WARNING", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                DialogResult dialogResult = MessageBox.Show("The start address is in front of the load address.\r\nAre you sure ?", "WARNING", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (dialogResult != DialogResult.Yes)
+                {
+                    return;
+                }
             }
 
             useLabels = chkLabels.Checked ? true : false;

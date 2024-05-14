@@ -1126,9 +1126,14 @@ namespace Z80_RC2014
                     richTextBoxProgram.SelectionChanged += new EventHandler(richTextBox_SelectionChanged);
                 }
 
-                if (formProgram != null) formProgram.Close();
-                assemblerZ80 = new AssemblerZ80(new string[] {""});
-                for (int i=0; i<bytes.Length; i++)
+                // Create assembler object if needed
+                if (assemblerZ80 == null)
+                {
+                    assemblerZ80 = new AssemblerZ80(new string[] { "" });
+                }
+
+                // Copy bytes
+                for (int i = 0; i < bytes.Length; i++)
                 {
                     assemblerZ80.RAM[formAddresses.loadAddress + i] = bytes[i];
                 }
@@ -1148,11 +1153,6 @@ namespace Z80_RC2014
                 UpdateInterrupts();
                 ClearDisplay();
 
-                // Reset color
-                richTextBoxProgram.SelectionStart = 0;
-                richTextBoxProgram.SelectionLength = richTextBoxProgram.Text.Length;
-                richTextBoxProgram.SelectionBackColor = Color.White;
-
                 tbSetProgramCounter.Text = "0000";
                 tbMemoryStartAddress.Text = "0000";
                 tbMemoryUpdateByte.Text = "00";
@@ -1162,8 +1162,6 @@ namespace Z80_RC2014
 
                 Graphics g = pbBreakPoint.CreateGraphics();
                 g.Clear(Color.LightGray);
-
-                richTextBoxProgram.Text = "";
 
                 toolStripButtonRun.Enabled = true;
                 toolStripButtonFast.Enabled = true;
