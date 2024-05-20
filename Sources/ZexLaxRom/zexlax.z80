@@ -151,7 +151,9 @@ loop:   ld      a,(hl)          ; end of list ?
         jp      z,done
         dec     hl
         call    stt
-        jp      loop
+        ld      a,(single)
+        cp      $01
+        jp      nz,loop
         
 done:   ld      de,msg3
         call    PRINT_CONSOLE
@@ -2532,7 +2534,7 @@ test:   push    af
         ld      l,d
         ld      h,e
         ld      (linenumber),hl   
-test1:  ld      hl,linenumber
+        ld      hl,linenumber
         ld      b,4
         call    hexstr
         ld      c,' '
@@ -2545,7 +2547,7 @@ test1:  ld      hl,linenumber
         ld      b,16
         ld      hl,msbt
         call    hexstr
-        ld      a,(delay)       ; check for delay 
+test1:  ld      a,(delay)       ; check for delay 
         cp      $00
         jr      z,test2  
         ld      a,10
@@ -3059,6 +3061,7 @@ crctab: db      000h,000h,000h,000h
 debug:       db      0        ; Debug mode, set to 1 to activate
 delay:       db      0        ; Delay, set to 1 to activate
 entry:       db      0        ; Starting entry of the tests
+single:      db      0        ; Single test, set to 1 to activate
 linenumber:  ds      4        ; Linenumber in debug mode
 
 ;-------------------------------------------------------------------------------;
@@ -3275,6 +3278,16 @@ COMMAND_START_ENTRY:
         JR   Z,PROCESS_START_ENTRY                      ; (start of) number, so process 
         CP   '9'                                        ; Compare to '9'
         JR   Z,PROCESS_START_ENTRY                      ; (start of) number, so process 
+COMMAND_SINGLE:
+        CP   's'                                        ; Compare to 's'
+        JR   NZ,COMMAND_REGULAR                         ; Not recognized
+        LD   A,$01
+        LD   ($8000 + single - $0100),A                  ; Set single test   
+        LD   HL,SIO_BUFFER                              ; Clear buffer (set to start)
+        LD   (SIO_BUFFER_PTR),HL
+        LD   A,'>'                                      ; Prompt
+        CALL CONSOLE_OUT                                ; Print it
+        JP   MAIN                                       ; Back to command processor
 COMMAND_REGULAR:
         CP   'r'                                        ; Compare to 'r'
         JR   NZ,COMMAND_DEBUG                           ; Not recognized
@@ -3384,6 +3397,8 @@ COPY_DONE_TEXT:
         .DB  $0D,$0A
         .DB  "regular (r) or debug (d) ?"
         .DB  $0D,$0A
+        .DB  "single (s) to set a flag to indicate a single test to perform"
+        .DB  $0D,$0A
         .DB  "Or enter a number to set the start entry."
         .DB  $0D,$0A,'>',$00
 
@@ -3458,6 +3473,14 @@ SIO_BUFFER_PTR:                 .DS     2
 
 
             
+
+
+
+
+
+
+
+
 
 
 
