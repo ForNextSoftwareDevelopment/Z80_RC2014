@@ -2,17 +2,14 @@
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Reflection.Emit;
 using System.Security.Cryptography;
-using System.Security.Policy;
 using System.Windows.Forms; 
 
-namespace Z80_RC2014
+namespace Z80
 {
     class AssemblerZ80
     {
@@ -25,21 +22,21 @@ namespace Z80_RC2014
         public enum OPERATOR
         {
             NONE = 0,
-            ADD  = 1,  // Add
-            ADC  = 2,  // Add with carry
-            SUB  = 3,  // Subtract
-            SBC  = 4,  // Subtract with carry
-            AND  = 5,  // Logical AND
-            OR   = 6,  // Logical OR
-            XOR  = 7,  // Logical Exclusive OR
-            RLC  = 8,  // Rotate left with carry
-            RRC  = 9,  // Rotate right with carry
-            RL   = 10, // Rotate left through carry 
-            RR   = 11, // Rotate right through carry 
-            SLA  = 12, // Arithmetic shift left  
-            SRA  = 13, // Arithmetic shift right
-            SLL  = 14, // Logical shift left
-            SRL  = 15  // Logical shift right
+            ADD = 1,  // Add
+            ADC = 2,  // Add with carry
+            SUB = 3,  // Subtract
+            SBC = 4,  // Subtract with carry
+            AND = 5,  // Logical AND
+            OR = 6,  // Logical OR
+            XOR = 7,  // Logical Exclusive OR
+            RLC = 8,  // Rotate left with carry
+            RRC = 9,  // Rotate right with carry
+            RL = 10, // Rotate left through carry 
+            RR = 11, // Rotate right through carry 
+            SLA = 12, // Arithmetic shift left  
+            SRA = 13, // Arithmetic shift right
+            SLL = 14, // Logical shift left
+            SRL = 15  // Logical shift right
         }
 
         // Interrupt modes
@@ -92,7 +89,6 @@ namespace Z80_RC2014
 
         // Start location of the program
         public int startLocation;
-        bool startLocationSet; 
 
         // Current location of the program (during firstpass and secondpass)
         public int locationCounter;
@@ -140,21 +136,11 @@ namespace Z80_RC2014
         // Interrupt Enable value
         public bool intrIE = false;
 
-        // Update output terminal
-        public bool UpdateDisplay = false;
+        // Skip delay routine
+        public bool skipDelay = false;
 
-        // Update compact flash port
-        public bool UpdateCompactFlashRead = false;
-        public bool UpdateCompactFlashWrite = false;
-
-        // Counter to indicate the byte in the sector to read/write
-        public int cfIndex = 0;
-
-        // Boolean to detect the vector (pointer) of  the SIO interrupt routine
-        public bool register2Selected = false;
-
-        // Address of the SIO interrupt handler (if detected)
-        public int IO_INTERRUPT_HANDLER_VECTOR = -1;
+        // Signal (debug) output to terminal
+        public bool outTerminal = false;
 
         #endregion
 
@@ -170,8 +156,7 @@ namespace Z80_RC2014
 
             instructions = new Instructions();
 
-            startLocation = 0x0000;
-            startLocationSet = false;
+            startLocation = 0;
             registerSP = 0x0000;
 
             for (int i = 0; i < RAMprogramLine.Length; i++)
@@ -367,8 +352,8 @@ namespace Z80_RC2014
                     }
 
                     // Half Carry flag
-                    b1 = (byte)( arg1 & 0x0F);  // Masking upper 4 bits
-                    b2 = (byte)( arg2 & 0x0F);  // Masking upper 4 bits
+                    b1 = (byte)(arg1 & 0x0F);  // Masking upper 4 bits
+                    b2 = (byte)(arg2 & 0x0F);  // Masking upper 4 bits
                     b3 = (byte)(carry & 0x0F);  // Masking upper 4 bits
                     flagH = (((b1 - b2 - b3) & 0x10) == 0x10);
 
@@ -644,8 +629,8 @@ namespace Z80_RC2014
                     }
 
                     // Half Carry flag
-                    b1 = (byte)( arg1 & 0xFF);  // Masking upper 8 bits
-                    b2 = (byte)( arg2 & 0xFF);  // Masking upper 8 bits
+                    b1 = (byte)(arg1 & 0xFF);  // Masking upper 8 bits
+                    b2 = (byte)(arg2 & 0xFF);  // Masking upper 8 bits
                     b3 = (byte)(carry & 0xFF);  // Masking upper 8 bits
                     flagH = (((b1 - b2 - b3) & 0x100) == 0x100);
 
@@ -889,7 +874,7 @@ namespace Z80_RC2014
             {
                 foreach (KeyValuePair<string, int> keyValuePair in addressSymbolTable)
                 {
-                    if (str.ToLower().Trim() == keyValuePair.Key.ToLower().Trim())
+                    if (str.Trim() == keyValuePair.Key.Trim())
                     {
                         arg = arg.Replace(str, keyValuePair.Value.ToString());
                     }
@@ -958,12 +943,12 @@ namespace Z80_RC2014
             // Replace all symbols from symbol table
             foreach (string str in args)
             {
-                // Replace $ with location counter -1 (position of opcode)
-                if (str.Trim() == "$") arg = arg.Replace("$", (locationCounter - 1).ToString());
-
                 foreach (KeyValuePair<string, int> keyValuePair in addressSymbolTable)
                 {
-                    if (str.ToLower().Trim() == keyValuePair.Key.ToLower().Trim())
+                    // Replace $ with location counter -1 (position of opcode)
+                    if (str.Trim() == "$") arg = arg.Replace("$", (locationCounter - 1).ToString());
+
+                    if (str.Trim() == keyValuePair.Key.Trim())
                     {
                         arg = arg.Replace(str, keyValuePair.Value.ToString());
                     }
@@ -1202,30 +1187,6 @@ namespace Z80_RC2014
             }
         }
 
-        /// <summary>
-        /// Check for any action to perform on writing to ports 
-        /// </summary>
-        /// <param name="port"></param>
-        private void CheckOutPorts(byte port)
-        {
-            // Output to port A data or port B data
-            if (port == 0x81) UpdateDisplay = true;
-            if (port == 0x83) UpdateDisplay = true;
-            // Set SIO control port status 'buffer empty' and 'no char ready'
-            if (port == 0x80) PORT[0x80] |= 0x04;
-            if (port == 0x82) PORT[0x82] |= 0x04;
-            // Set Compact Flash card status 'ready' (clear 'busy' bit)
-            if (port == 0x17) PORT[0x17] &= 0x7F;
-            // Indicate write to CF card
-            if (port == 0x10) UpdateCompactFlashWrite = true;
-            // Reset index for (new) sector to read/write
-            if ((port == 0x17) && ((registerA == 0x20) || (registerA == 0x30))) cfIndex = 0;
-            // Set SIO/2 interrupt vector    
-            if ((port == 0x82) && register2Selected) IO_INTERRUPT_HANDLER_VECTOR = registerA;
-            if ((port == 0x82) && (registerA == 0x02)) register2Selected = true;
-            if ((port == 0x82) && (registerA != 0x02)) register2Selected = false;
-        }
-
         #endregion
 
         #region Methods (FindInstruction)
@@ -1235,11 +1196,10 @@ namespace Z80_RC2014
         /// </summary>
         /// <param name="instructions"></param>
         /// <param name="opcode"></param>
-        /// <param name="alternative"></param>
         /// <param name="operands"></param>
         /// <param name="matchOpcode"></param>
         /// <returns></returns>
-        private List<Instruction> FindInstruction(Instruction[] instructions, bool alternative, string opcode, string[] operands, out bool matchOpcode)
+        private List<Instruction> FindInstruction(Instruction[] instructions, string opcode, string[] operands, out bool matchOpcode)
         {
             matchOpcode = false;
 
@@ -1250,7 +1210,6 @@ namespace Z80_RC2014
             for (int indexZ80Instructions = 0; indexZ80Instructions < instructions.Length; indexZ80Instructions++)
             {
                 string[] splitZ80Instruction = instructions[indexZ80Instructions].Mnemonic.Split(' ');
-                if (alternative) splitZ80Instruction = instructions[indexZ80Instructions].AltMnemonic.Split(' ');
                 string opcodeZ80Instruction = splitZ80Instruction[0];
 
                 string temp = "";
@@ -1607,8 +1566,9 @@ namespace Z80_RC2014
         /// <returns></returns>
         public string FirstPass()
         {
+            // StartLocation denotes the first RAM location to which we are assembling the program
             // locationCounter is a temporary variable to traverse program for first pass
-            locationCounter = 0;
+            locationCounter = startLocation;
 
             // Opcode in the line
             string opcode;
@@ -1670,7 +1630,7 @@ namespace Z80_RC2014
                             found = true;
                             char ch = line[startQuote + 1];
                             line = line.Replace("'" + ch + "'", ((int)ch).ToString("X2") + "H");
-                        } 
+                        }
                     } while (found);
                 } catch (Exception exception)
                 {
@@ -1703,7 +1663,7 @@ namespace Z80_RC2014
                         }
 
                         // ADD the label/value
-                        if ((label != null) && (label != ""))
+                        if (label != "")
                         {
                             addressSymbolTable.Add(label, calc);
                         } else
@@ -1781,7 +1741,7 @@ namespace Z80_RC2014
                 try
                 {
                     // Check for opcode (directive) db, replace chars/strings with hex values
-                    if (line.ToLower().StartsWith("db") || line.ToLower().StartsWith(".db") || line.ToLower().StartsWith("defb") || line.ToLower().StartsWith(".text"))
+                    if (line.ToLower().StartsWith("db") || line.ToLower().StartsWith(".db") || line.ToLower().StartsWith("defb") || line.ToLower().StartsWith("defm") || line.ToLower().StartsWith(".text"))
                     {
                         string lineDB = line;
 
@@ -1872,7 +1832,7 @@ namespace Z80_RC2014
 
                     opcode = line.Substring(0, end_of_opcode_pos).ToLower().Trim();
 
-                    // Split the line and store the strings formed in an array
+                    // Split the line and store the strings formed in array
                     operands = line.Substring(end_of_opcode_pos).Trim().Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
 
                     // Rebuild the line
@@ -1971,7 +1931,7 @@ namespace Z80_RC2014
                 try
                 {
                     // Check for opcode (directive) org
-                    if (opcode.Equals("org") || opcode.Equals(".org"))
+                    if (opcode.Equals("org"))
                     {
                         // Line must have an argument after the opcode
                         if (operands.Length == 0)
@@ -1984,13 +1944,6 @@ namespace Z80_RC2014
                         if (result == "OK")
                         {
                             locationCounter = calc;
-
-                            // Set startlocation if not set already
-                            if (!startLocationSet)
-                            {
-                                startLocation = locationCounter;
-                                startLocationSet = true;
-                            }
                         } else
                         {
                             return ("Invalid operand for " + opcode + "(" + result + ") at line " + (lineNumber + 1));
@@ -2014,11 +1967,11 @@ namespace Z80_RC2014
                 // Count the operand(s) for db, dw, ds
                 try
                 {
-                    if (opcode.Equals("db") || opcode.Equals(".db") || opcode.Equals("defb") || opcode.Equals(".text"))
+                    if (opcode.Equals("db") || opcode.Equals("defb") || opcode.Equals("defm"))
                     {
                         if (operands.Length == 0)
                         {
-                            return (opcode + " directive has too few operands at line " + (lineNumber + 1));
+                            return ("db directive has too few operands at line " + (lineNumber + 1));
                         }
 
                         // Loop for traversing after db
@@ -2038,11 +1991,11 @@ namespace Z80_RC2014
                         continue;
                     }
 
-                    if (opcode.Equals("dw") || opcode.Equals(".dw") || opcode.Equals("defw"))
+                    if (opcode.Equals("dw") || opcode.Equals("defw"))
                     {
                         if (operands.Length == 0)
                         {
-                            return (opcode + " directive has too few operands at line " + (lineNumber + 1));
+                            return ("dw directive has too few operands at line " + (lineNumber + 1));
                         }
 
                         for (int pos = 0; pos < operands.Length; pos++)
@@ -2061,11 +2014,11 @@ namespace Z80_RC2014
                         continue;
                     }
 
-                    if (opcode.Equals("ds") || opcode.Equals(".ds") || opcode.Equals("defs"))
+                    if (opcode.Equals("ds") || opcode.Equals("defs"))
                     {
                         if (operands.Length == 0)
                         {
-                            return (opcode + " directive has too few operands at line " + (lineNumber + 1));
+                            return ("ds directive has too few operands at line " + (lineNumber + 1));
                         }
 
                         // If valid address then store in locationCounter
@@ -2089,7 +2042,7 @@ namespace Z80_RC2014
                     }
 
                     // End of program
-                    if ((opcode == "end") || (opcode == ".end"))
+                    if (opcode == "end")
                     {
                         programRun[lineNumber] = line;
                         programView[lineNumber] = line;
@@ -2101,34 +2054,34 @@ namespace Z80_RC2014
 
                     // Check opcode/operands for Z80 instructions (Main)
                     bool matchOpcodeMain = false;
-                    found = FindInstruction(instructions.Z80MainInstructions, false, opcode, operands, out matchOpcodeMain);
+                    found = FindInstruction(instructions.Z80MainInstructions, opcode, operands, out matchOpcodeMain);
 
                     // Check opcode/operands for Z80 instructions (Bit)
                     bool matchOpcodeBit = false;
                     if (found.Count == 0)
                     {
-                        found = FindInstruction(instructions.Z80BitInstructions, false, opcode, operands, out matchOpcodeBit);
+                        found = FindInstruction(instructions.Z80BitInstructions, opcode, operands, out matchOpcodeBit);
                     }
 
                     // Check opcode/operands for Z80 instructions (IX)
                     bool matchOpcodeIX = false;
                     if (found.Count == 0)
                     {
-                        found = FindInstruction(instructions.Z80IXInstructions, false, opcode, operands, out matchOpcodeIX);
+                        found = FindInstruction(instructions.Z80IXInstructions, opcode, operands, out matchOpcodeIX);
                     }
 
                     // Check opcode/operands for Z80 instructions (IY)
                     bool matchOpcodeIY = false;
                     if (found.Count == 0)
                     {
-                        found = FindInstruction(instructions.Z80IYInstructions, false, opcode, operands, out matchOpcodeIY);
+                        found = FindInstruction(instructions.Z80IYInstructions, opcode, operands, out matchOpcodeIY);
                     }
 
                     // Check opcode/operands for Z80 instructions (Misc.)
                     bool matchOpcodeMisc = false;
                     if (found.Count == 0)
                     {
-                        found = FindInstruction(instructions.Z80MiscInstructions, false, opcode, operands, out matchOpcodeMisc);
+                        found = FindInstruction(instructions.Z80MiscInstructions, opcode, operands, out matchOpcodeMisc);
                     }
 
                     // Check opcode/operands for Z80 instructions (IXbit)
@@ -2166,53 +2119,20 @@ namespace Z80_RC2014
                         return (message);
                     }
 
-                    // No match, try alternative opcodes
-                    bool matchOpcodeAlternative = false;
-                    if (found.Count == 0)
-                    {
-                        // Check opcode/operands for Z80 instructions (Main)
-                        found = FindInstruction(instructions.Z80MainInstructions, true, opcode, operands, out matchOpcodeAlternative);
-
-                        // Check opcode/operands for Z80 instructions (Bit)
-                        if (found.Count == 0)
-                        {
-                            found = FindInstruction(instructions.Z80BitInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                        }
-
-                        // Check opcode/operands for Z80 instructions (IX)
-                        if (found.Count == 0)
-                        {
-                            found = FindInstruction(instructions.Z80IXInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                        }
-
-                        // Check opcode/operands for Z80 instructions (IY)
-                        if (found.Count == 0)
-                        {
-                            found = FindInstruction(instructions.Z80IYInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                        }
-
-                        // Check opcode/operands for Z80 instructions (Misc.)
-                        if (found.Count == 0)
-                        {
-                            found = FindInstruction(instructions.Z80MiscInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                        }
-                    }
-
                     // No match
                     if (found.Count == 0)
                     {
                         string message = "";
 
-                        if (matchOpcodeMain || matchOpcodeBit || matchOpcodeIX || matchOpcodeIY || matchOpcodeMisc || matchOpcodeIXbit || matchOpcodeIYbit || matchOpcodeAlternative)
+                        if (matchOpcodeMain || matchOpcodeBit || matchOpcodeIX || matchOpcodeIY || matchOpcodeMisc || matchOpcodeIXbit || matchOpcodeIYbit)
                         {
-                            if (matchOpcodeMain)        message += "Opcode '" + opcode + "' found in Main instructions.\r\n";
-                            if (matchOpcodeBit)         message += "Opcode '" + opcode + "' found in Bit instructions.\r\n";
-                            if (matchOpcodeIX)          message += "Opcode '" + opcode + "' found in IX instructions.\r\n";
-                            if (matchOpcodeIY)          message += "Opcode '" + opcode + "' found in IY instructions.\r\n";
-                            if (matchOpcodeMisc)        message += "Opcode '" + opcode + "' found in Misc instructions.\r\n";
-                            if (matchOpcodeIXbit)       message += "Opcode '" + opcode + "' found in BitIX instructions.\r\n";
-                            if (matchOpcodeIYbit)       message += "Opcode '" + opcode + "' found in BitIY instructions.\r\n";
-                            if (matchOpcodeAlternative) message += "Opcode '" + opcode + "' found in Alternative instructions.\r\n";
+                            if (matchOpcodeMain)  message += "Opcode '" + opcode + "' found in Main instructions.\r\n";
+                            if (matchOpcodeBit)   message += "Opcode '" + opcode + "' found in Bit instructions.\r\n";
+                            if (matchOpcodeIX)    message += "Opcode '" + opcode + "' found in IX instructions.\r\n";
+                            if (matchOpcodeIY)    message += "Opcode '" + opcode + "' found in IY instructions.\r\n";
+                            if (matchOpcodeMisc)  message += "Opcode '" + opcode + "' found in Misc instructions.\r\n";
+                            if (matchOpcodeIXbit) message += "Opcode '" + opcode + "' found in BitIX instructions.\r\n";
+                            if (matchOpcodeIYbit) message += "Opcode '" + opcode + "' found in BitIY instructions.\r\n";
 
                             return (message + "\r\nError in arguments: '" + args + "'\r\n\r\nAt line " + (lineNumber + 1));
                         } 
@@ -2255,8 +2175,9 @@ namespace Z80_RC2014
         /// <returns></returns>
         public string SecondPass()
         {
+            // StartLocation gives the location from which we have to start assembling
             // Using locationCounter to traverse the location of RAM during second pass
-            locationCounter = 0; 
+            locationCounter = startLocation; 
 
             // Opcode in the line
             string opcode;
@@ -2340,7 +2261,6 @@ namespace Z80_RC2014
                             break;
 
                         case "org":                                                                                     // org
-                        case ".org":                                                                                     
 
                             if (operands.Length == 0)
                             {
@@ -2361,14 +2281,12 @@ namespace Z80_RC2014
                             break;
 
                         case "end":                                                                                     // end
-                        case ".end":                                                                                     
 
                             return ("OK");
 
                         case "db":                                                                                      // db
                         case "defb":
-                        case ".db":
-                        case ".text":
+                        case "defm":
 
                             for (k = 0; k < operands.Length; k++)
                             {
@@ -2392,7 +2310,6 @@ namespace Z80_RC2014
 
                         case "dw":                                                                                      // dw
                         case "defw":
-                        case ".dw":
 
                             for (k = 0; k < operands.Length; k++)
                             {
@@ -2402,7 +2319,7 @@ namespace Z80_RC2014
                                 {
                                     if (RAMprogramLine[locationCounter] != -1)
                                     {
-                                        return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] + 1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
+                                        return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] +1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
                                     }
 
                                     str = calcShort.ToString("X4");
@@ -2419,7 +2336,6 @@ namespace Z80_RC2014
 
                         case "ds":                                                                                      // ds
                         case "defs":
-                        case ".ds":
 
                             calcShort = Get2Bytes(operands[0], out string resultds);
                             if (resultds == "OK")
@@ -2428,7 +2344,7 @@ namespace Z80_RC2014
                                 {
                                     if (RAMprogramLine[locationCounter] != -1)
                                     {
-                                        return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] + 1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
+                                        return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] +1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
                                     }
 
                                     // We don't have to initialize operands for ds, just reserve space for them
@@ -2449,34 +2365,34 @@ namespace Z80_RC2014
 
                             // Check opcode/operands for Z80 instructions (Main)
                             bool matchOpcodeMain = false;
-                            found = FindInstruction(instructions.Z80MainInstructions, false, opcode, operands, out matchOpcodeMain);
+                            found = FindInstruction(instructions.Z80MainInstructions, opcode, operands, out matchOpcodeMain);
 
                             // Check opcode/operands for Z80 instructions (Bit)
                             bool matchOpcodeBit = false;
                             if (found.Count == 0)
                             {
-                                found = FindInstruction(instructions.Z80BitInstructions, false, opcode, operands, out matchOpcodeBit);
+                                found = FindInstruction(instructions.Z80BitInstructions, opcode, operands, out matchOpcodeBit);
                             }
 
                             // Check opcode/operands for Z80 instructions (IX)
                             bool matchOpcodeIX = false;
                             if (found.Count == 0)
                             {
-                                found = FindInstruction(instructions.Z80IXInstructions, false, opcode, operands, out matchOpcodeIX);
+                                found = FindInstruction(instructions.Z80IXInstructions, opcode, operands, out matchOpcodeIX);
                             }
 
                             // Check opcode/operands for Z80 instructions (IY)
                             bool matchOpcodeIY = false;
                             if (found.Count == 0)
                             {
-                                found = FindInstruction(instructions.Z80IYInstructions, false, opcode, operands, out matchOpcodeIY);
+                                found = FindInstruction(instructions.Z80IYInstructions, opcode, operands, out matchOpcodeIY);
                             }
 
                             // Check opcode/operands for Z80 instructions (Misc.)
                             bool matchOpcodeMisc = false;
                             if (found.Count == 0)
                             {
-                                found = FindInstruction(instructions.Z80MiscInstructions, false, opcode, operands, out matchOpcodeMisc);
+                                found = FindInstruction(instructions.Z80MiscInstructions, opcode, operands, out matchOpcodeMisc);
                             }
 
                             // Check opcode/operands for Z80 instructions (IXbit)
@@ -2519,53 +2435,20 @@ namespace Z80_RC2014
                                 return (message);
                             }
 
-                            // No match, try alternative opcodes
-                            bool matchOpcodeAlternative = false;
-                            if (found.Count == 0)
-                            {
-                                // Check opcode/operands for Z80 instructions (Main)
-                                found = FindInstruction(instructions.Z80MainInstructions, true, opcode, operands, out matchOpcodeAlternative);
-
-                                // Check opcode/operands for Z80 instructions (Bit)
-                                if (found.Count == 0)
-                                {
-                                    found = FindInstruction(instructions.Z80BitInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                                }
-
-                                // Check opcode/operands for Z80 instructions (IX)
-                                if (found.Count == 0)
-                                {
-                                    found = FindInstruction(instructions.Z80IXInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                                }
-
-                                // Check opcode/operands for Z80 instructions (IY)
-                                if (found.Count == 0)
-                                {
-                                    found = FindInstruction(instructions.Z80IYInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                                }
-
-                                // Check opcode/operands for Z80 instructions (Misc.)
-                                if (found.Count == 0)
-                                {
-                                    found = FindInstruction(instructions.Z80MiscInstructions, true, opcode, operands, out matchOpcodeAlternative);
-                                }
-                            }
-
                             // Just a double check (already checked in firstpass)
                             if (found.Count == 0)
                             {
                                 string message = "";
 
-                                if (matchOpcodeMain || matchOpcodeBit || matchOpcodeIX || matchOpcodeIY || matchOpcodeMisc || matchOpcodeIXbit || matchOpcodeIYbit || matchOpcodeAlternative)
+                                if (matchOpcodeMain || matchOpcodeBit || matchOpcodeIX || matchOpcodeIY || matchOpcodeMisc || matchOpcodeIXbit || matchOpcodeIYbit)
                                 {
-                                    if (matchOpcodeMain)        message += "Opcode '" + opcode + "' found in Main instructions.\r\n";
-                                    if (matchOpcodeBit)         message += "Opcode '" + opcode + "' found in Bit instructions.\r\n";
-                                    if (matchOpcodeIX)          message += "Opcode '" + opcode + "' found in IX instructions.\r\n";
-                                    if (matchOpcodeIY)          message += "Opcode '" + opcode + "' found in IY instructions.\r\n";
-                                    if (matchOpcodeMisc)        message += "Opcode '" + opcode + "' found in Misc instructions.\r\n";
-                                    if (matchOpcodeIXbit)       message += "Opcode '" + opcode + "' found in BitIX instructions.\r\n";
-                                    if (matchOpcodeIYbit)       message += "Opcode '" + opcode + "' found in BitIY instructions.\r\n";
-                                    if (matchOpcodeAlternative) message += "Opcode '" + opcode + "' found in Alternative instructions.\r\n";
+                                    if (matchOpcodeMain)  message += "Opcode '" + opcode + "' found in Main instructions.\r\n";
+                                    if (matchOpcodeBit)   message += "Opcode '" + opcode + "' found in Bit instructions.\r\n";
+                                    if (matchOpcodeIX)    message += "Opcode '" + opcode + "' found in IX instructions.\r\n";
+                                    if (matchOpcodeIY)    message += "Opcode '" + opcode + "' found in IY instructions.\r\n";
+                                    if (matchOpcodeMisc)  message += "Opcode '" + opcode + "' found in Misc instructions.\r\n";
+                                    if (matchOpcodeIXbit) message += "Opcode '" + opcode + "' found in BitIX instructions.\r\n";
+                                    if (matchOpcodeIYbit) message += "Opcode '" + opcode + "' found in BitIY instructions.\r\n";
 
                                     return (message + "\r\nError in arguments: '" + args + "'\r\n\r\nAt line " + (lineNumber + 1));
                                 }
@@ -2578,7 +2461,7 @@ namespace Z80_RC2014
 
                             if (RAMprogramLine[locationCounter] != -1)
                             {
-                                return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] + 1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
+                                return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] +1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
                             }
 
                             RAMprogramLine[locationCounter] = lineNumber;
@@ -2608,8 +2491,6 @@ namespace Z80_RC2014
                             }
 
                             string[] splitZ80Instruction = instruction.Mnemonic.Split(' ');
-                            if (matchOpcodeAlternative) splitZ80Instruction = instruction.AltMnemonic.Split(' ');
-
                             string opcodeZ80Instruction = splitZ80Instruction[0];
 
                             string temp = "";
@@ -2632,7 +2513,7 @@ namespace Z80_RC2014
                                 {
                                     if (RAMprogramLine[locationCounter] != -1)
                                     {
-                                        return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] + 1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
+                                        return ("Allready code at 0x" + locationCounter.ToString("X4") + " (from line " + (RAMprogramLine[locationCounter] +1).ToString() + ") for " + opcode + " at line " + (lineNumber + 1));
                                     }
 
                                     switch (argumentsZ80Instruction[i])
@@ -2680,7 +2561,23 @@ namespace Z80_RC2014
                                                 calcShort = Get2Bytes(operands[i], out string oResult);
                                                 if (oResult == "OK")
                                                 {
-                                                    int offset = calcShort - locationCounter -1;
+                                                    // Check if operand is a label or direct value
+                                                    bool direct = true;
+                                                    if (operands[i].Contains('$')) direct = false;
+                                                    foreach (KeyValuePair<string, int> keyValuePair in addressSymbolTable)
+                                                    {
+                                                        if (operands[i].ToLower().Trim() == keyValuePair.Key.ToLower().Trim()) direct = false;
+                                                    }
+
+                                                    int offset;
+                                                    if (direct)
+                                                    {
+                                                        offset = calcShort < 0x80 ? calcShort : calcShort - 256;
+                                                    } else
+                                                    {
+                                                        offset = calcShort - locationCounter - 1;
+                                                    }
+
                                                     if (offset > 127) return ("Offset to large for " + opcode + ":\r\nOffset = " + offset + " (max 127)\r\nAt line " + (lineNumber + 1));
                                                     if (offset < -128) return ("Offset to small for " + opcode + ":\r\nOffset = " + offset + " (min -128)\r\nAt line " + (lineNumber + 1));
                                                     RAMprogramLine[locationCounter] = lineNumber;
@@ -2754,26 +2651,16 @@ namespace Z80_RC2014
                     }            
 
                     // Show ascii if db
-                    if (((opcode == "db") || (opcode == ".db") || (opcode == ".text")) && (operands.Length > 0))
+                    if ((opcode == "db") && (operands.Length > 0))
                     {
-                        string strAscii = " ('";
-
-                        for (int i = 0; i < operands.Length; i++)
+                        calcByte = GetByte(operands[0], out string resultdb);
+                        if (resultdb == "OK")
                         {
-                            calcByte = GetByte(operands[i], out string resultdb);
-                            if (resultdb == "OK")
+                            if ((calcByte >= 32) && (calcByte < 127))
                             {
-                                if ((calcByte >= 32) && (calcByte < 127))
-                                {
-                                    strAscii += Convert.ToChar(calcByte);
-                                } else
-                                {
-                                    strAscii += '.';
-                                }
+                                programView[lineNumber] += " ('" + Convert.ToChar(calcByte) + "')";
                             }
                         }
-
-                        programView[lineNumber] +=  strAscii + "')";
                     }
 
                     // Show ascii if ld
@@ -2807,7 +2694,7 @@ namespace Z80_RC2014
                     if (segment == SEGMENT.cseg) cseg = (UInt16)locationCounter;
                     if (segment == SEGMENT.dseg) dseg = (UInt16)locationCounter;
 
-                    if ((opcode != "org") && (opcode != ".org") && (opcode != "aseg") && (opcode != "cseg") && (opcode != "dseg") && (opcode != "db") && (opcode != ".db") && (opcode != ".text"))
+                    if ((opcode != "org") && (opcode != "aseg") && (opcode != "cseg") && (opcode != "dseg"))
                      {
                         while (programView[lineNumber].Length < 46)
                         {
@@ -2851,6 +2738,11 @@ namespace Z80_RC2014
             byte val = 0x00;
             registerPC = startAddress;
             string lo, hi;
+
+            if (RAMprogramLine[startAddress] == -1)
+            {
+                return ("No valid instruction at address: 0x" + startAddress.ToString("X4"));
+            }
 
             byteInstruction = RAM[registerPC];
 
@@ -3324,20 +3216,28 @@ namespace Z80_RC2014
                     registerPC++;
                 } else if (byteInstruction == 0x10)                                                                         // djnz o 
                 {
-                    registerB -= 0x01;
-                    if (registerB == 0)
+                    if (skipDelay && (RAM[registerPC + 1] == 0xFE))
                     {
+                        registerB = 0x00;
                         registerPC++;
                         registerPC++;
                     } else
                     {
-                        registerPC++;
-                        byte offset = RAM[registerPC];
-                        registerPC++;
-                        UInt16 address = registerPC;
-                        if (offset < 0x80) address += offset;
-                        if (offset >= 0x80) address -= (UInt16)(0x100 - offset);
-                        registerPC = address;
+                        registerB -= 0x01;
+                        if (registerB == 0)
+                        {
+                            registerPC++;
+                            registerPC++;
+                        } else
+                        {
+                            registerPC++;
+                            byte offset = RAM[registerPC];
+                            registerPC++;
+                            UInt16 address = registerPC;
+                            if (offset < 0x80) address += offset;
+                            if (offset >= 0x80) address -= (UInt16)(0x100 - offset);
+                            registerPC = address;
+                        }
                     }
                 } else if (byteInstruction == 0xFB)                                                                         // ei
                 {
@@ -3414,14 +3314,7 @@ namespace Z80_RC2014
                 } else if (byteInstruction == 0xdb)                                                                         // in a,(n)
                 {
                     registerPC++;
-                    if (RAM[registerPC] == 0x10)
-                    {
-                        // Update the Port and registerA from the compact flash card data
-                        UpdateCompactFlashRead = true;
-                    } else
-                    {
-                        registerA = PORT[RAM[registerPC]];
-                    }
+                    registerA = PORT[RAM[registerPC]];
                     registerPC++;
                 } else if (byteInstruction == 0x3C)                                                                         // inc a
                 {
@@ -3885,6 +3778,7 @@ namespace Z80_RC2014
                            (byteInstruction == 0x6B) ||
                            (byteInstruction == 0x6C) ||
                            (byteInstruction == 0x6D) ||
+                           (byteInstruction == 0x60) ||
                            (byteInstruction == 0x6F) ||
                            (byteInstruction == 0x78) ||
                            (byteInstruction == 0x79) ||
@@ -3933,7 +3827,7 @@ namespace Z80_RC2014
                 {
                     registerPC++;
                     PORT[RAM[registerPC]] = registerA;
-                    CheckOutPorts(RAM[registerPC]);
+                    if (RAM[registerPC] == 0x80) outTerminal = true;
                     registerPC++;
                 } else if (byteInstruction == 0xF1)                                                                         // pop af
                 {
@@ -4313,7 +4207,6 @@ namespace Z80_RC2014
             }
 
             nextAddress = registerPC;
-
             return "";
         }
 
@@ -4682,7 +4575,7 @@ namespace Z80_RC2014
                     registerPC++;
                 } else if (byteInstruction == 0xE1)                                                                         // pop ix
                 {
-                    registerIndex = RAM[registerSP]; 
+                    registerIndex = RAM[registerSP];
                     registerSP++;
                     registerIndex += (UInt16)(0x0100 * RAM[registerSP]);
                     registerSP++;
@@ -4987,13 +4880,13 @@ namespace Z80_RC2014
                            (byteInstruction == 0x05) ||
                            (byteInstruction == 0x06) ||
                            (byteInstruction == 0x07))
-                { 
+                {
                     RAM[address] = RotateShift(RAM[address], OPERATOR.RLC);
                     if (byteInstruction != 0x06)
                     {
                         num = byteInstruction;
                         result = SetRegisterValue((byte)(num & 0x07), RAM[address]);
-                        if (!result) return ("Can't set the register value"); 
+                        if (!result) return ("Can't set the register value");
                     }
                     registerPC++;
                 } else if ((byteInstruction == 0x18) ||                                                                      // rr (ix+o)
@@ -5274,15 +5167,8 @@ namespace Z80_RC2014
                     (byteInstruction == 0x78))
                 {
                     num = byteInstruction - 0x40;
-                    if (registerC == 0x10)
-                    {
-                        // Update the Port and register from the compact flash card data
-                        UpdateCompactFlashRead = true;
-                    } else
-                    {
-                        SetRegisterValue((byte)((num >> 3) & 0x07), PORT[registerC]);
-                        SetFlags(PORT[registerC]);
-                    }
+                    SetRegisterValue((byte)((num >> 3) & 0x07), PORT[registerC]);
+                    SetFlags(PORT[registerC]);
                     registerPC++;
                 } else if ((byteInstruction == 0x41) ||                                                                    // out (c),r
                            (byteInstruction == 0x49) ||
@@ -5293,11 +5179,11 @@ namespace Z80_RC2014
                            (byteInstruction == 0x79))
                 {
                     num = byteInstruction - 0x41;
+                    registerPC++;
                     result = GetRegisterValue((byte)((num >> 3) & 0x07), ref val);
                     if (!result) return ("Can't get the register value");
                     PORT[registerC] = val;
-                    CheckOutPorts(registerC);
-                    registerPC++;
+                    if (registerPC == 0x80) outTerminal = true;
                 } else if (byteInstruction == 0x42)                                                                         // sbc hl,bc
                 {
                     UInt16 value1 = (UInt16)(0x0100 * registerH + registerL);
@@ -5452,14 +5338,7 @@ namespace Z80_RC2014
                     registerPC++;
                 } else if (byteInstruction == 0x70)                                                                         // in (c)
                 {
-                    if (registerC == 0x10)
-                    {
-                        // Update the Port and registerA from the compact flash card data
-                        UpdateCompactFlashRead = true;
-                    } else
-                    {
-                        SetFlags(PORT[registerC]);
-                    }
+                    SetFlags(PORT[registerC]);
                     registerPC++;
                 } else if (byteInstruction == 0x44)                                                                         // neg
                 {
@@ -5496,7 +5375,6 @@ namespace Z80_RC2014
                 } else if (byteInstruction == 0x47)                                                                         // ld i,a
                 {
                     registerI = registerA;
-                    IO_INTERRUPT_HANDLER_VECTOR = (IO_INTERRUPT_HANDLER_VECTOR & 0x00FF) + (0x100 * registerI);
                     registerPC++;
                 } else if (byteInstruction == 0x57)                                                                         // ld a,i
                 {
@@ -5678,7 +5556,6 @@ namespace Z80_RC2014
                     int value;
                     UInt16 address = (UInt16)(0x0100 * registerH + registerL);
                     PORT[registerC] = RAM[address];
-                    CheckOutPorts(registerC);
                     value = 0x0100 * registerH + registerL;
                     value += 0x01;
                     Get2ByteFromInt(value, out lo, out hi);
@@ -5687,6 +5564,7 @@ namespace Z80_RC2014
                     flagN = true;
                     registerB--;
                     if (registerB == 0) flagZ = true; else flagZ = false;
+                    if (registerPC == 0x80) outTerminal = true;
                     registerPC++;
                 } else if (byteInstruction == 0xB3)                                                                         // otir
                 {
@@ -5861,7 +5739,6 @@ namespace Z80_RC2014
                     int value;
                     UInt16 address = (UInt16)(0x0100 * registerH + registerL);
                     PORT[registerC] = RAM[address];
-                    CheckOutPorts(registerC);
                     value = 0x0100 * registerH + registerL;
                     value -= 0x01;
                     Get2ByteFromInt(value, out lo, out hi);
@@ -5870,6 +5747,7 @@ namespace Z80_RC2014
                     flagN = true;
                     registerB--;
                     if (registerB == 0) flagZ = true; else flagZ = false;
+                    if (registerPC == 0x80) outTerminal = true;
                     registerPC++;
                 } else if (byteInstruction == 0xBB)                                                                         // otdr
                 {
@@ -5894,7 +5772,7 @@ namespace Z80_RC2014
                     }
                 } else
                 {
-                    return ("Unknown Miscellaneous instruction 'ED" + byteInstruction.ToString("X2") + "'");
+                    return ("Unknown Miscellaneous instruction '" + byteInstruction.ToString("X2") + "'");
                 }
             } catch (Exception exception)
             {
@@ -6451,156 +6329,6 @@ namespace Z80_RC2014
             }
 
             return "";
-        }
-
-        #endregion
-
-        #region Methods (DisAssemble)
-
-        /// <summary>
-        /// Decode a single instruction and state the number of operand bytes (Main, Bit, IX, IY and Misc.)
-        /// </summary>
-        /// <param name="code"></param>
-        /// <param name="size"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public string Decode(int code, out int size, out TYPE type)
-        {
-            string instruction = "UNKNOWN";
-            size = 0;
-            type = TYPE.NONE;
-
-            // Check opcode to find the instruction in the list (Main)
-            for (int indexZ80Instructions = 0; indexZ80Instructions < instructions.Z80MainInstructions.Length; indexZ80Instructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80MainInstructions[indexZ80Instructions].Opcode)
-                {
-                    instruction = instructions.Z80MainInstructions[indexZ80Instructions].Mnemonic;
-                    size = instructions.Z80MainInstructions[indexZ80Instructions].Size;
-                    type = instructions.Z80MainInstructions[indexZ80Instructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            // Check opcode to find the instruction in the list (Bit)
-            for (int indexZ80Instructions = 0; indexZ80Instructions < instructions.Z80BitInstructions.Length; indexZ80Instructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80BitInstructions[indexZ80Instructions].Opcode)
-                {
-                    instruction = instructions.Z80BitInstructions[indexZ80Instructions].Mnemonic;
-                    size = instructions.Z80BitInstructions[indexZ80Instructions].Size;
-                    type = instructions.Z80BitInstructions[indexZ80Instructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            // Check opcode to find the instruction in the list (IX)
-            for (int indexZ80Instructions = 0; indexZ80Instructions < instructions.Z80IXInstructions.Length; indexZ80Instructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80IXInstructions[indexZ80Instructions].Opcode)
-                {
-                    instruction = instructions.Z80IXInstructions[indexZ80Instructions].Mnemonic;
-                    size = instructions.Z80IXInstructions[indexZ80Instructions].Size;
-                    type = instructions.Z80IXInstructions[indexZ80Instructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            // Check opcode to find the instruction in the list (IY)
-            for (int indexZ80Instructions = 0; indexZ80Instructions < instructions.Z80IYInstructions.Length; indexZ80Instructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80IYInstructions[indexZ80Instructions].Opcode)
-                {
-                    instruction = instructions.Z80IYInstructions[indexZ80Instructions].Mnemonic;
-                    size = instructions.Z80IYInstructions[indexZ80Instructions].Size;
-                    type = instructions.Z80IYInstructions[indexZ80Instructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            // Check opcode to find the instruction in the list (Misc.)
-            for (int indexZ80Instructions = 0; indexZ80Instructions < instructions.Z80MiscInstructions.Length; indexZ80Instructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80MiscInstructions[indexZ80Instructions].Opcode)
-                {
-                    instruction = instructions.Z80MiscInstructions[indexZ80Instructions].Mnemonic;
-                    size = instructions.Z80MiscInstructions[indexZ80Instructions].Size;
-                    type = instructions.Z80MiscInstructions[indexZ80Instructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            return (instruction);
-        }
-
-        /// <summary>
-        /// Decode a single instruction and state the number of operand bytes (IXbit)
-        /// </summary>
-        /// <param name="code"></param>
-        /// <param name="size"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public string DecodeIXbit(int code, out int size, out TYPE type)
-        {
-            string instruction = "UNKNOWN";
-            size = 0;
-            type = TYPE.NONE;
-
-            // Check opcode to find the instruction in the list (IXbit)
-            for (int indexZ80IXBitInstructions = 0; indexZ80IXBitInstructions < instructions.Z80IXBitInstructions.Length; indexZ80IXBitInstructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80IXBitInstructions[indexZ80IXBitInstructions].Opcode)
-                {
-                    instruction = instructions.Z80IXBitInstructions[indexZ80IXBitInstructions].Mnemonic;
-                    size = instructions.Z80IXBitInstructions[indexZ80IXBitInstructions].Size;
-                    type = instructions.Z80IXBitInstructions[indexZ80IXBitInstructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            return (instruction);
-        }
-
-        /// <summary>
-        /// Decode a single instruction and state the number of operand bytes (IYbit)
-        /// </summary>
-        /// <param name="code"></param>
-        /// <param name="size"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public string DecodeIYbit(int code, out int size, out TYPE type)
-        {
-            string instruction = "UNKNOWN";
-            size = 0;
-            type = TYPE.NONE;
-
-            // Check opcode to find the instruction in the list (IYbit)
-            for (int indexZ80IYBitInstructions = 0; indexZ80IYBitInstructions < instructions.Z80IYBitInstructions.Length; indexZ80IYBitInstructions++)
-            {
-                // Opcode matches
-                if (code == instructions.Z80IYBitInstructions[indexZ80IYBitInstructions].Opcode)
-                {
-                    instruction = instructions.Z80IYBitInstructions[indexZ80IYBitInstructions].Mnemonic;
-                    size = instructions.Z80IYBitInstructions[indexZ80IYBitInstructions].Size;
-                    type = instructions.Z80IYBitInstructions[indexZ80IYBitInstructions].Type;
-
-                    return (instruction.ToUpper());
-                }
-            }
-
-            return (instruction);
         }
 
         #endregion
