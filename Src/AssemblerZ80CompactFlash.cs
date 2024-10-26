@@ -1702,7 +1702,23 @@ namespace Z80_RC2014
                                                 calcShort = Get2Bytes(operands[i], out string oResult);
                                                 if (oResult == "OK")
                                                 {
-                                                    int offset = calcShort - locationCounter -1;
+                                                    // Check if operand is a label or direct value
+                                                    bool direct = true;
+                                                    if (operands[i].Contains('$')) direct = false;
+                                                    foreach (KeyValuePair<string, int> keyValuePair in addressSymbolTable)
+                                                    {
+                                                        if (operands[i].ToLower().Trim() == keyValuePair.Key.ToLower().Trim()) direct = false;
+                                                    }
+
+                                                    int offset;
+                                                    if (direct)
+                                                    {
+                                                        offset = calcShort < 0x80 ? calcShort : calcShort - 256;
+                                                    } else
+                                                    {
+                                                        offset = calcShort - locationCounter - 1;
+                                                    }
+
                                                     if (offset > 127) return ("Offset to large for " + opcode + ":\r\nOffset = " + offset + " (max 127)\r\nAt line " + (lineNumber + 1));
                                                     if (offset < -128) return ("Offset to small for " + opcode + ":\r\nOffset = " + offset + " (min -128)\r\nAt line " + (lineNumber + 1));
                                                     RAMprogramLine[locationCounter] = lineNumber;
