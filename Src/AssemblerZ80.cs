@@ -2682,7 +2682,7 @@ namespace Z80_RC2014
                                                 {
                                                     // Check if operand is a label or direct value
                                                     bool direct = true;
-                                                    if (operands[i].Contains('$')) direct = false;
+                                                    if (operands[i].Contains("$")) direct = false;
                                                     foreach (KeyValuePair<string, int> keyValuePair in addressSymbolTable)
                                                     {
                                                         if (operands[i].ToLower().Trim() == keyValuePair.Key.ToLower().Trim()) direct = false;
