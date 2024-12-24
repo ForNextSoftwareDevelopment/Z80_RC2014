@@ -4,3 +4,11 @@ All notable changes to this project will be documented in this file.
 ## [1.0] - 2022-07-28
 ### Initial Release
 https://github.com/ForNextSoftwareDevelopment/Z80_RC2014
+
+## [1.1] - 2024-12-24
+### Debug
+- Arguments were not always properly recognized (upper/lowercase problem)
+### Updates
+- Improved determination of start and stop address when saving a binary 
+- Help updated with info for the breakpoint
+- Focus line is now selectable
