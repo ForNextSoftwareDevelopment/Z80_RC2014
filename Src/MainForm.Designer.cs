@@ -122,7 +122,7 @@ namespace Z80_RC2014
             this.toolStripButtonSave = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonSaveAs = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripButtonRestartSimulator = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButtonReset = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripButtonStartDebug = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonRun = new System.Windows.Forms.ToolStripButton();
@@ -187,6 +187,8 @@ namespace Z80_RC2014
             this.chkShowExternalCode = new System.Windows.Forms.CheckBox();
             this.chkBreakOnAddress = new System.Windows.Forms.CheckBox();
             this.tbBreakOnAddress = new System.Windows.Forms.TextBox();
+            this.lblFocusLine = new System.Windows.Forms.Label();
+            this.numFocusLine = new System.Windows.Forms.NumericUpDown();
             this.menuStrip.SuspendLayout();
             this.groupBoxFlags.SuspendLayout();
             this.groupBoxRegisters.SuspendLayout();
@@ -208,6 +210,7 @@ namespace Z80_RC2014
             this.tcMemoryCompactFlash.SuspendLayout();
             this.tpMemory.SuspendLayout();
             this.tpCFCard.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numFocusLine)).BeginInit();
             this.SuspendLayout();
             // 
             // menuStrip
@@ -1111,7 +1114,7 @@ namespace Z80_RC2014
             this.toolStripButtonSave,
             this.toolStripButtonSaveAs,
             this.toolStripSeparator1,
-            this.toolStripButtonRestartSimulator,
+            this.toolStripButtonReset,
             this.toolStripSeparator2,
             this.toolStripButtonStartDebug,
             this.toolStripButtonRun,
@@ -1169,15 +1172,15 @@ namespace Z80_RC2014
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
             // 
-            // toolStripButtonRestartSimulator
+            // toolStripButtonReset
             // 
-            this.toolStripButtonRestartSimulator.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButtonRestartSimulator.Image = global::Z80_RC2014.Properties.Resources.reset;
-            this.toolStripButtonRestartSimulator.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonRestartSimulator.Name = "toolStripButtonRestartSimulator";
-            this.toolStripButtonRestartSimulator.Size = new System.Drawing.Size(23, 22);
-            this.toolStripButtonRestartSimulator.Text = "Reset Simulator";
-            this.toolStripButtonRestartSimulator.Click += new System.EventHandler(this.resetSimulator_Click);
+            this.toolStripButtonReset.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripButtonReset.Image = global::Z80_RC2014.Properties.Resources.reset;
+            this.toolStripButtonReset.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButtonReset.Name = "toolStripButtonReset";
+            this.toolStripButtonReset.Size = new System.Drawing.Size(23, 22);
+            this.toolStripButtonReset.Text = "Reset Simulator";
+            this.toolStripButtonReset.Click += new System.EventHandler(this.resetSimulator_Click);
             // 
             // toolStripSeparator2
             // 
@@ -1258,7 +1261,7 @@ namespace Z80_RC2014
             // btnViewProgram
             // 
             this.btnViewProgram.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnViewProgram.Location = new System.Drawing.Point(1018, 12);
+            this.btnViewProgram.Location = new System.Drawing.Point(1118, 12);
             this.btnViewProgram.Name = "btnViewProgram";
             this.btnViewProgram.Size = new System.Drawing.Size(85, 23);
             this.btnViewProgram.TabIndex = 22;
@@ -1269,7 +1272,7 @@ namespace Z80_RC2014
             // btnViewSymbolTable
             // 
             this.btnViewSymbolTable.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnViewSymbolTable.Location = new System.Drawing.Point(907, 12);
+            this.btnViewSymbolTable.Location = new System.Drawing.Point(1007, 12);
             this.btnViewSymbolTable.Name = "btnViewSymbolTable";
             this.btnViewSymbolTable.Size = new System.Drawing.Size(105, 23);
             this.btnViewSymbolTable.TabIndex = 23;
@@ -1387,6 +1390,7 @@ namespace Z80_RC2014
             // 
             // richTextBoxProgram
             // 
+            this.richTextBoxProgram.AcceptsTab = true;
             this.richTextBoxProgram.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
@@ -1394,7 +1398,7 @@ namespace Z80_RC2014
             this.richTextBoxProgram.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.richTextBoxProgram.Location = new System.Drawing.Point(6, 6);
             this.richTextBoxProgram.Name = "richTextBoxProgram";
-            this.richTextBoxProgram.Size = new System.Drawing.Size(443, 882);
+            this.richTextBoxProgram.Size = new System.Drawing.Size(543, 882);
             this.richTextBoxProgram.TabIndex = 5;
             this.richTextBoxProgram.Text = "";
             this.richTextBoxProgram.WordWrap = false;
@@ -1411,7 +1415,7 @@ namespace Z80_RC2014
             // btnClearBreakPoint
             // 
             this.btnClearBreakPoint.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnClearBreakPoint.Location = new System.Drawing.Point(807, 13);
+            this.btnClearBreakPoint.Location = new System.Drawing.Point(907, 13);
             this.btnClearBreakPoint.Name = "btnClearBreakPoint";
             this.btnClearBreakPoint.Size = new System.Drawing.Size(94, 22);
             this.btnClearBreakPoint.TabIndex = 27;
@@ -1435,7 +1439,7 @@ namespace Z80_RC2014
             // 
             this.numericUpDownDelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.numericUpDownDelay.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.numericUpDownDelay.Location = new System.Drawing.Point(1317, 9);
+            this.numericUpDownDelay.Location = new System.Drawing.Point(1417, 10);
             this.numericUpDownDelay.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -1461,7 +1465,7 @@ namespace Z80_RC2014
             // 
             this.lblDelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblDelay.AutoSize = true;
-            this.lblDelay.Location = new System.Drawing.Point(1252, 16);
+            this.lblDelay.Location = new System.Drawing.Point(1352, 16);
             this.lblDelay.Name = "lblDelay";
             this.lblDelay.Size = new System.Drawing.Size(59, 13);
             this.lblDelay.TabIndex = 30;
@@ -1470,7 +1474,7 @@ namespace Z80_RC2014
             // lblSetProgramCounter
             // 
             this.lblSetProgramCounter.AutoSize = true;
-            this.lblSetProgramCounter.Location = new System.Drawing.Point(497, 9);
+            this.lblSetProgramCounter.Location = new System.Drawing.Point(497, 7);
             this.lblSetProgramCounter.Name = "lblSetProgramCounter";
             this.lblSetProgramCounter.Size = new System.Drawing.Size(105, 13);
             this.lblSetProgramCounter.TabIndex = 31;
@@ -1478,7 +1482,7 @@ namespace Z80_RC2014
             // 
             // tbSetProgramCounter
             // 
-            this.tbSetProgramCounter.Location = new System.Drawing.Point(608, 5);
+            this.tbSetProgramCounter.Location = new System.Drawing.Point(608, 4);
             this.tbSetProgramCounter.MaxLength = 4;
             this.tbSetProgramCounter.Name = "tbSetProgramCounter";
             this.tbSetProgramCounter.Size = new System.Drawing.Size(40, 20);
@@ -1494,7 +1498,7 @@ namespace Z80_RC2014
             this.chkTerminal.AutoSize = true;
             this.chkTerminal.Checked = true;
             this.chkTerminal.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkTerminal.Location = new System.Drawing.Point(1119, 16);
+            this.chkTerminal.Location = new System.Drawing.Point(1219, 16);
             this.chkTerminal.Name = "chkTerminal";
             this.chkTerminal.Size = new System.Drawing.Size(66, 17);
             this.chkTerminal.TabIndex = 33;
@@ -1762,7 +1766,7 @@ namespace Z80_RC2014
             // 
             this.chkBreakOnExternalCode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkBreakOnExternalCode.AutoSize = true;
-            this.chkBreakOnExternalCode.Location = new System.Drawing.Point(654, 7);
+            this.chkBreakOnExternalCode.Location = new System.Drawing.Point(627, 30);
             this.chkBreakOnExternalCode.Name = "chkBreakOnExternalCode";
             this.chkBreakOnExternalCode.Size = new System.Drawing.Size(137, 17);
             this.chkBreakOnExternalCode.TabIndex = 38;
@@ -1779,7 +1783,7 @@ namespace Z80_RC2014
             this.tcSources.Location = new System.Drawing.Point(338, 41);
             this.tcSources.Name = "tcSources";
             this.tcSources.SelectedIndex = 0;
-            this.tcSources.Size = new System.Drawing.Size(463, 920);
+            this.tcSources.Size = new System.Drawing.Size(563, 920);
             this.tcSources.TabIndex = 39;
             this.tcSources.SelectedIndexChanged += new System.EventHandler(this.tcSources_SelectedIndexChanged);
             // 
@@ -1790,7 +1794,7 @@ namespace Z80_RC2014
             this.tpProgram.Location = new System.Drawing.Point(4, 22);
             this.tpProgram.Name = "tpProgram";
             this.tpProgram.Padding = new System.Windows.Forms.Padding(3);
-            this.tpProgram.Size = new System.Drawing.Size(455, 894);
+            this.tpProgram.Size = new System.Drawing.Size(555, 894);
             this.tpProgram.TabIndex = 0;
             this.tpProgram.Text = "Program";
             // 
@@ -1831,7 +1835,7 @@ namespace Z80_RC2014
             this.tcMemoryCompactFlash.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.tcMemoryCompactFlash.Controls.Add(this.tpMemory);
             this.tcMemoryCompactFlash.Controls.Add(this.tpCFCard);
-            this.tcMemoryCompactFlash.Location = new System.Drawing.Point(807, 41);
+            this.tcMemoryCompactFlash.Location = new System.Drawing.Point(907, 41);
             this.tcMemoryCompactFlash.Name = "tcMemoryCompactFlash";
             this.tcMemoryCompactFlash.SelectedIndex = 0;
             this.tcMemoryCompactFlash.Size = new System.Drawing.Size(565, 920);
@@ -1875,7 +1879,7 @@ namespace Z80_RC2014
             this.chkShowExternalCode.AutoSize = true;
             this.chkShowExternalCode.Checked = true;
             this.chkShowExternalCode.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkShowExternalCode.Location = new System.Drawing.Point(500, 31);
+            this.chkShowExternalCode.Location = new System.Drawing.Point(500, 30);
             this.chkShowExternalCode.Name = "chkShowExternalCode";
             this.chkShowExternalCode.Size = new System.Drawing.Size(121, 17);
             this.chkShowExternalCode.TabIndex = 41;
@@ -1886,7 +1890,7 @@ namespace Z80_RC2014
             // 
             this.chkBreakOnAddress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkBreakOnAddress.AutoSize = true;
-            this.chkBreakOnAddress.Location = new System.Drawing.Point(654, 29);
+            this.chkBreakOnAddress.Location = new System.Drawing.Point(770, 30);
             this.chkBreakOnAddress.Name = "chkBreakOnAddress";
             this.chkBreakOnAddress.Size = new System.Drawing.Size(89, 17);
             this.chkBreakOnAddress.TabIndex = 42;
@@ -1896,7 +1900,7 @@ namespace Z80_RC2014
             // tbBreakOnAddress
             // 
             this.tbBreakOnAddress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.tbBreakOnAddress.Location = new System.Drawing.Point(749, 27);
+            this.tbBreakOnAddress.Location = new System.Drawing.Point(859, 28);
             this.tbBreakOnAddress.MaxLength = 4;
             this.tbBreakOnAddress.Name = "tbBreakOnAddress";
             this.tbBreakOnAddress.Size = new System.Drawing.Size(42, 20);
@@ -1905,17 +1909,46 @@ namespace Z80_RC2014
             this.tbBreakOnAddress.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.tbBreakOnAddress.TextChanged += new System.EventHandler(this.tbAddress_TextChanged);
             // 
+            // lblFocusLine
+            // 
+            this.lblFocusLine.AutoSize = true;
+            this.lblFocusLine.Location = new System.Drawing.Point(787, 7);
+            this.lblFocusLine.Name = "lblFocusLine";
+            this.lblFocusLine.Size = new System.Drawing.Size(56, 13);
+            this.lblFocusLine.TabIndex = 53;
+            this.lblFocusLine.Text = "FocusLine";
+            // 
+            // numFocusLine
+            // 
+            this.numFocusLine.Location = new System.Drawing.Point(849, 4);
+            this.numFocusLine.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numFocusLine.Name = "numFocusLine";
+            this.numFocusLine.Size = new System.Drawing.Size(52, 20);
+            this.numFocusLine.TabIndex = 52;
+            this.numFocusLine.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.numFocusLine.Value = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1384, 981);
+            this.ClientSize = new System.Drawing.Size(1484, 981);
+            this.Controls.Add(this.chkBreakOnExternalCode);
+            this.Controls.Add(this.lblFocusLine);
+            this.Controls.Add(this.numFocusLine);
             this.Controls.Add(this.tbBreakOnAddress);
             this.Controls.Add(this.chkBreakOnAddress);
             this.Controls.Add(this.chkShowExternalCode);
             this.Controls.Add(this.tcMemoryCompactFlash);
             this.Controls.Add(this.tcSources);
-            this.Controls.Add(this.chkBreakOnExternalCode);
             this.Controls.Add(this.groupBoxAltFlags);
             this.Controls.Add(this.tcInstructions);
             this.Controls.Add(this.chkTerminal);
@@ -1935,7 +1968,7 @@ namespace Z80_RC2014
             this.Controls.Add(this.menuStrip);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
-            this.MinimumSize = new System.Drawing.Size(1400, 1020);
+            this.MinimumSize = new System.Drawing.Size(1500, 1020);
             this.Name = "MainForm";
             this.Text = "Z80 Simulator";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
@@ -1972,6 +2005,7 @@ namespace Z80_RC2014
             this.tcMemoryCompactFlash.ResumeLayout(false);
             this.tpMemory.ResumeLayout(false);
             this.tpCFCard.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.numFocusLine)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -2035,7 +2069,7 @@ namespace Z80_RC2014
         private System.Windows.Forms.ToolStripButton toolStripButtonSave;
         private System.Windows.Forms.ToolStripButton toolStripButtonSaveAs;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripButton toolStripButtonRestartSimulator;
+        private System.Windows.Forms.ToolStripButton toolStripButtonReset;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton toolStripButtonStartDebug;
         private System.Windows.Forms.ToolStripButton toolStripButtonStep;
@@ -2134,6 +2168,8 @@ namespace Z80_RC2014
         private System.Windows.Forms.CheckBox chkShowExternalCode;
         private System.Windows.Forms.CheckBox chkBreakOnAddress;
         private System.Windows.Forms.TextBox tbBreakOnAddress;
+        private System.Windows.Forms.Label lblFocusLine;
+        private System.Windows.Forms.NumericUpDown numFocusLine;
     }
 }
 

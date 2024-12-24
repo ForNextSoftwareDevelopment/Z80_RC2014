@@ -887,6 +887,9 @@ namespace Z80_RC2014
             // Replace all symbols from symbol table
             foreach (string str in args)
             {
+                // Replace $ with location counter -1 (position of opcode)
+                if (str.Trim() == "$") arg = arg.Replace("$", (locationCounter - 1).ToString());
+
                 foreach (KeyValuePair<string, int> keyValuePair in addressSymbolTable)
                 {
                     if (str.ToLower().Trim() == keyValuePair.Key.ToLower().Trim())
@@ -1274,7 +1277,7 @@ namespace Z80_RC2014
                         for (int indexOperands = 0; indexOperands < operands.Length; indexOperands++)
                         {
                             string arg = argumentsZ80Instruction[indexOperands];
-                            string opr = operands[indexOperands].ToLower().Trim();
+                            string opr = operands[indexOperands].Trim();
 
                             // Check if operand is indexed and the instruction is not indexed (not with cp)
                             if ((opcode != "cp") && opr.StartsWith("(") && !arg.StartsWith("("))
@@ -1329,6 +1332,9 @@ namespace Z80_RC2014
 
                                 if ((result1 != "OK") || (result2 != "OK")) matchOperands = false;
                             }
+
+                            // Operand to lowercase for easy checking next items
+                            opr = opr.ToLower();
 
                             // Check if the instruction operand is a number (immediate, extended or indexed)
                             if (
